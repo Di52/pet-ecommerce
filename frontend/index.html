@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Pet Shop</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+    }
+
+    header {
+      background-color: #232f3e;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    h2 {
+      margin: 20px 0 10px 10px;
+      font-size: 1.5rem;
+    }
+
+    .category-block {
+      margin-bottom: 30px;
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+    }
+
+    .category-header a {
+      text-decoration: none;
+      font-size: 0.9rem;
+      color: #0073e6;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+      padding: 10px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .card h4 {
+      margin: 10px 0 5px;
+      font-size: 1rem;
+    }
+
+    .card p {
+      font-size: 0.9rem;
+      color: #555;
+      margin: 2px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="font-size: 1.5rem;">My Pet Shop</div>
+  <a href="login.html">Login</a>
+</header>
+
+<div id="category-sections" style="padding: 20px;">
+  <!-- JS will render category blocks here -->
+</div>
+
+<script>
+  async function fetchData() {
+    try {
+      const categoryRes = await fetch("https://jojonomipet.store/categories");
+      const categories = await categoryRes.json();
+
+      const container = document.getElementById("category-sections");
+      container.innerHTML = "";
+
+      for (const cat of categories) {
+        const prodRes = await fetch(`https://jojonomipet.store/products-by-category/${cat.name}`);
+        const products = await prodRes.json();
+
+        const section = document.createElement("div");
+        section.className = "category-block";
+
+        const header = document.createElement("div");
+        header.className = "category-header";
+        header.innerHTML = `<h2>${cat.name}</h2><a href="products.html?category=${cat.name}">View All</a>`;
+
+        const productGrid = document.createElement("div");
+        productGrid.className = "product-grid";
+
+        for (const p of products) {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <img src="${p.image_url}" alt="${p.name}" />
+            <h4>${p.name}</h4>
+            <p>$${parseFloat(p.price).toFixed(2)}</p>
+            <p>${p.description}</p>
+          `;
+          productGrid.appendChild(card);
+        }
+
+        section.appendChild(header);
+        section.appendChild(productGrid);
+        container.appendChild(section);
+      }
+    } catch (err) {
+      document.getElementById("category-sections").innerHTML = "<p style='color:red;'>Failed to load data.</p>";
+      console.error(err);
+    }
+  }
+
+  fetchData();
+</script>
+
+</body>
+</html>
