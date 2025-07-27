@@ -1,4 +1,5 @@
 from flask import Blueprint, jsonify, request
+from boto3.dynamodb.conditions import Key
 from decimal import Decimal
 import boto3
 import uuid
@@ -40,3 +41,11 @@ def add_product():
 
     product_table.put_item(Item=product)
     return jsonify({'message': 'Product added'}), 200
+
+@product_bp.route('/product/<product_id>', methods=['GET'])
+def get_product(product_id):
+    response = product_table.get_item(Key={'id': product_id})
+    item = response.get('Item')
+    if not item:
+        return jsonify({'error': 'Product not found'}), 404
+    return jsonify(item), 200
