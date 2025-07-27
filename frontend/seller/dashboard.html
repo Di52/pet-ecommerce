@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Seller Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-color: #f4f4f4;
+    }
+    header {
+      background-color: #232f3e;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+    }
+    .container {
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+    .card {
+      background-color: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    .card h4 {
+      margin: 10px 0 5px;
+    }
+    .card p {
+      margin: 2px 0;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    .card button {
+      margin-top: 10px;
+      padding: 6px 10px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .card button:hover {
+      background-color: #b52a38;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="font-size: 1.5rem;">Seller Profile</div>
+  <div>
+    <a href="upload.html">Upload Product</a>
+    <a href="give_promo.html">Give Promo</a>
+  </div>
+</header>
+
+<div class="container">
+  <h2>Your Uploaded Products</h2>
+  <div class="product-grid" id="product-list">Loading...</div>
+</div>
+
+<script>
+const backend = "https://jojonomipet.store";
+const email = sessionStorage.getItem("user") ? JSON.parse(sessionStorage.getItem("user")).email : "";
+
+async function loadSellerProducts() {
+  const container = document.getElementById("product-list");
+  if (!email) {
+    container.innerHTML = "<p>Please log in as seller to view your products.</p>";
+    return;
+  }
+  try {
+    const res = await fetch(`${backend}/products-by-seller/${email}`);
+    const products = await res.json();
+    container.innerHTML = "";
+    if (products.length === 0) {
+      container.innerHTML = "<p>No products found.</p>";
+      return;
+    }
+    for (const p of products) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <img src="${p.image_url}" alt="${p.name}">
+        <h4>${p.name}</h4>
+        <p>$${parseFloat(p.price).toFixed(2)}</p>
+        <p>${p.description}</p>
+        <p>Stock: ${p.stock || 0}</p>
+        <button onclick="deleteProduct('${p.id}')">Delete</button>
+      `;
+      container.appendChild(card);
+    }
+  } catch (err) {
+    container.innerHTML = "<p style='color:red;'>Failed to load products.</p>";
+  }
+}
+
+function deleteProduct(id) {
+  fetch(`${backend}/admin/products/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id })
+  })
+  .then(() => {
+    alert("Deleted!");
+    loadSellerProducts();
+  })
+  .catch(() => alert("Failed to delete."));
+}
+
+loadSellerProducts();
+</script>
+
+</body>
+</html>
