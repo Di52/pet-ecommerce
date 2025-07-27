@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Give Promo</title>
+  <style>
+    body { font-family: Arial; background: #f4f4f4; padding: 20px; }
+    h2 { color: #333; }
+    input, button {
+      display: block;
+      margin-top: 10px;
+      padding: 8px;
+      width: 300px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover { background-color: #0056b3; }
+    .container {
+      background: white;
+      padding: 30px;
+      max-width: 400px;
+      margin: 50px auto;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Give a Promo Code</h2>
+    <input type="text" id="code" placeholder="Promo Code" />
+    <input type="number" id="discount" placeholder="Discount (e.g. 10 for 10%)" />
+    <button onclick="submitPromo()">Submit Promo</button>
+    <p id="status" style="color: green;"></p>
+  </div>
+
+  <script>
+    function submitPromo() {
+      const code = document.getElementById('code').value.trim();
+      const discount = document.getElementById('discount').value.trim();
+      const user = JSON.parse(sessionStorage.getItem("user"));
+      if (!user || !user.email) {
+        document.getElementById('status').style.color = 'red';
+        document.getElementById('status').innerText = "Please log in first.";
+        return;
+      }
+
+      fetch("https://jojonomipet.store/seller/give-promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code, discount,
+          seller_email: user.email
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('status').style.color = 'green';
+        document.getElementById('status').innerText = data.message || "Success!";
+      })
+      .catch(err => {
+        document.getElementById('status').style.color = 'red';
+        document.getElementById('status').innerText = "Failed to submit.";
+      });
+    }
+  </script>
+</body>
+</html>
