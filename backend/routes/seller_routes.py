@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from boto3.dynamodb.conditions import Attr
 import boto3
 import datetime
 
@@ -6,6 +7,7 @@ seller_bp = Blueprint('seller', __name__)
 dynamodb = boto3.resource('dynamodb', region_name='us-east-2')
 category_table = dynamodb.Table('Category')
 promo_table = dynamodb.Table('Promo')  # ✅ 确保 DynamoDB 中有这个表
+order_table = dynamodb.Table('Orders')
 
 # 获取商品分类
 @seller_bp.route('/categories', methods=['GET'])
@@ -51,3 +53,22 @@ def give_promo():
         'seller_email': data['seller_email']
     })
     return jsonify({'message': 'Promo code created successfully'}), 200
+
+@seller_bp.route('/seller/orders/<email>', methods=['GET'])
+def get_orders_by_seller(email):
+    response = order_table.scan()
+    all_orders = response.get('Items', [])
+
+    seller_orders = []
+    for order in all_orders:
+        matched_products = [p for p in order['products'] if p.get('seller_id') == email]
+        if matched_products:
+            seller_orders.append({
+                "order_id": order["order_id"],
+                "email": order["email"],
+                "date": order["date"],
+                "products": matched_products,
+                "total": sum(p["price"] * p["quantity"] for p in matched_products)
+            })
+
+    return jsonify({"success": True, "orders": seller_orders})
