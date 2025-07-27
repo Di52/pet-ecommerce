@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sign Up</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .signup-container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    label {
+      display: block;
+      margin: 10px 0;
+      font-size: 0.9rem;
+    }
+    button {
+      width: 100%;
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    .switch {
+      text-align: center;
+      margin-top: 12px;
+    }
+    .switch a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    .switch a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+<div class="signup-container">
+  <h2>Sign Up</h2>
+  <form id="signup-form">
+    <input type="text" id="name" placeholder="Name" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
+    <input type="password" id="confirm" placeholder="Confirm Password" required>
+    
+    <label>
+      <input type="checkbox" id="is_seller"> Register as Seller
+    </label>
+
+    <button type="submit">Register</button>
+  </form>
+  <div class="switch">
+    Already have an account? <a href="login.html">Sign in</a>
+  </div>
+</div>
+
+<script>
+  document.getElementById("signup-form").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    const confirm = document.getElementById("confirm").value;
+    const is_seller = document.getElementById("is_seller").checked;
+
+    if (password !== confirm) {
+      alert("Passwords do not match.");
+      return;
+    }
+
+    fetch("https://jojonomipet.store/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password, is_seller })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        alert("Signup successful! Please log in.");
+        window.location.href = "login.html";
+      } else {
+        alert("Signup failed: " + (data.message || "unknown error"));
+      }
+    })
+    .catch(() => {
+      alert("Error connecting to server.");
+    });
+  });
+</script>
+</body>
+</html>
