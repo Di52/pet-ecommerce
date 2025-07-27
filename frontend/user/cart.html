@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Shopping Cart</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f6f6f6;
+      padding: 40px;
+      padding-top: 80px;
+      margin: 0;
+    }
+    .cart-container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      max-width: 900px;
+      margin: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      text-align: center;
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    img {
+      width: 80px;
+      height: auto;
+    }
+    .total {
+      text-align: right;
+      font-size: 1.2em;
+      margin-top: 20px;
+    }
+    .checkout-btn {
+      background-color: #28a745;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      float: right;
+    }
+    .checkout-btn:hover {
+      background-color: #218838;
+    }
+    .remove-btn {
+      background: none;
+      border: none;
+      color: #dc3545;
+      cursor: pointer;
+    }
+    .promo-section {
+      margin-top: 20px;
+      text-align: right;
+    }
+    .promo-section input {
+      padding: 5px;
+      margin-left: 10px;
+      margin-right: 10px;
+    }
+    .header {
+      background-color: #333;
+      color: white;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+    }
+    .navbar a:hover {
+      text-decoration: underline;
+    }
+    .logo h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+<div class="header">
+  <div class="logo"><h1>Our Shop</h1></div>
+  <div class="navbar">
+    <a href="home.html">Home</a>
+    <a href="profile.html">Profile</a>
+    <a href="cart.html">Cart</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </div>
+</div>
+
+<div class="cart-container">
+  <h2>My Shopping Cart</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Subtotal</th>
+        <th>Remove</th>
+      </tr>
+    </thead>
+    <tbody id="cart-body">
+      <tr><td colspan="6">Loading...</td></tr>
+    </tbody>
+  </table>
+
+  <div class="promo-section">
+    <label for="promoInput">Promo Code:</label>
+    <input type="text" id="promoInput" placeholder="Enter code">
+    <button onclick="applyPromo()">Apply</button>
+    <p id="promoMessage" style="margin-top: 10px;"></p>
+  </div>
+
+  <div class="total">
+    <strong>Total: $0.00</strong>
+  </div>
+
+  <button class="checkout-btn" onclick="checkout()">Proceed to Checkout</button>
+</div>
+
+<script>
+  function logout() {
+    sessionStorage.clear();
+    alert("You have been logged out.");
+    window.location.href = "index.html";
+  }
+
+  const user = JSON.parse(sessionStorage.getItem("user") || "null");
+  if (!user) {
+    alert("Please log in to view your cart.");
+    window.location.href = "login.html";
+  }
+
+  let originalTotal = 0;
+  let discountedTotal = 0;
+  let activePromos = [];
+
+  function loadCart() {
+    fetch(`https://jojonomipet.store/cart/${user.email}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) throw new Error(data.message || "Failed to load cart");
+        const tbody = document.getElementById("cart-body");
+        tbody.innerHTML = "";
+        originalTotal = 0;
+        data.cart.forEach((item) => {
+          const subtotal = item.price * item.quantity;
+          originalTotal += subtotal;
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><img src="${item.image_url}" alt="${item.name}"></td>
+            <td>${item.name}</td>
+            <td>$${item.price.toFixed(2)}</td>
+            <td>${item.quantity}</td>
+            <td>$${subtotal.toFixed(2)}</td>
+            <td><button class="remove-btn" onclick="removeFromCart('${item.product_id}')">✖</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+        discountedTotal = originalTotal;
+        updateTotalDisplay();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("cart-body").innerHTML =
+          `<tr><td colspan="6" style="color:red;">Failed to load cart items.</td></tr>`;
+      });
+  }
+
+  function updateTotalDisplay() {
+    document.querySelector('.total').innerHTML =
+      `<strong>Total: $${parseFloat(discountedTotal).toFixed(2)}</strong>`;
+  }
+
+  function removeFromCart(productId) {
+    fetch("https://jojonomipet.store/cart/remove", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, product_id: productId })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          loadCart();
+        } else {
+          alert("Failed to remove item.");
+        }
+      });
+  }
+
+  function applyPromo() {
+    const code = document.getElementById("promoInput").value.trim().toUpperCase();
+    const promoMsg = document.getElementById("promoMessage");
+    promoMsg.style.color = "red";
+    promoMsg.textContent = "Invalid promo code.";
+
+    const matched = activePromos.find(p => p.code === code);
+    if (matched) {
+      const discount = (originalTotal * matched.discount / 100);
+      discountedTotal = originalTotal - discount;
+      promoMsg.style.color = "green";
+      promoMsg.textContent = `Promo applied! You saved $${discount.toFixed(2)} 🎉`;
+    } else {
+      discountedTotal = originalTotal;
+    }
+
+    updateTotalDisplay();
+  }
+
+  function checkout() {
+    fetch("https://jojonomipet.store/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          alert(`✅ Order placed! ID: ${data.order_id}`);
+          window.location.reload();
+        } else {
+          alert("Checkout failed: " + data.message);
+        }
+      })
+      .catch(err => {
+        alert("Error during checkout.");
+        console.error(err);
+      });
+  }
+
+  function loadPromos() {
+    fetch("https://jojonomipet.store/promo/active")
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) activePromos = data.promos;
+      })
+      .catch(() => {});
+  }
+
+  loadPromos();
+  loadCart();
+</script>
+
+</body>
+</html>
